@@ -1,0 +1,271 @@
+--// Serviços
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = game.Workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+--// Variáveis
+local espEnabled = false
+local espObjects = {}
+local senhaCorreta = "PATRICK_SCRIPT" -- senha
+local senhaJaConfirmada = false
+local speedEnabled = false
+local jumpEnabled = false
+local defaultSpeed = 16
+local defaultJump = 50
+
+--// Funções ESP
+local function createBox(player)
+    if espObjects[player] then return end
+
+    local box = Drawing.new("Square")
+    box.Thickness = 2
+    box.Color = Color3.fromRGB(0, 255, 0)
+    box.Filled = false
+    box.Visible = false
+
+    espObjects[player] = box
+end
+
+local function removeBox(player)
+    if espObjects[player] then
+        espObjects[player]:Remove()
+        espObjects[player] = nil
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if espEnabled then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local root = player.Character.HumanoidRootPart
+                local pos, onScreen = Camera:WorldToViewportPoint(root.Position)
+
+                if onScreen then
+                    local topLeft = Camera:WorldToViewportPoint((root.CFrame * CFrame.new(-2, 3, 0)).p)
+                    local bottomRight = Camera:WorldToViewportPoint((root.CFrame * CFrame.new(2, -3, 0)).p)
+
+                    local box = espObjects[player]
+                    if box then
+                        box.Size = Vector2.new(math.abs(bottomRight.X - topLeft.X), math.abs(bottomRight.Y - topLeft.Y))
+                        box.Position = Vector2.new(topLeft.X, topLeft.Y)
+                        box.Visible = true
+                    end
+                else
+                    if espObjects[player] then
+                        espObjects[player].Visible = false
+                    end
+                end
+            end
+        end
+    else
+        for _, box in pairs(espObjects) do
+            box.Visible = false
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(createBox)
+Players.PlayerRemoving:Connect(removeBox)
+
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        createBox(player)
+    end
+end
+
+--// GUI
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+
+-- Frame principal
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 300, 0, 280)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -140)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.Active = true
+Frame.Draggable = true
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 12)
+
+-- Título fixo
+local Title = Instance.new("TextLabel", Frame)
+Title.Size = UDim2.new(0.9, 0, 0, 35)
+Title.Position = UDim2.new(0.05, 0, 0.02, 0)
+Title.Text = "👑 PATRICK VIP"
+Title.BackgroundColor3 = Color3.fromRGB(50, 0, 100)
+Title.TextColor3 = Color3.fromRGB(255, 215, 0)
+Title.Font = Enum.Font.GothamBlack
+Title.TextScaled = true
+Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 8)
+
+-- Label senha
+local Label = Instance.new("TextLabel", Frame)
+Label.Size = UDim2.new(0.9, 0, 0, 30)
+Label.Position = UDim2.new(0.05, 0, 0.2, 0)
+Label.Text = "Digite a Senha"
+Label.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+Label.Font = Enum.Font.GothamBold
+Label.TextScaled = true
+Instance.new("UICorner", Label).CornerRadius = UDim.new(0, 8)
+
+-- Caixa de senha
+local TextBox = Instance.new("TextBox", Frame)
+TextBox.Size = UDim2.new(0.9, 0, 0, 30)
+TextBox.Position = UDim2.new(0.05, 0, 0.35, 0)
+TextBox.PlaceholderText = "Senha..."
+TextBox.Text = ""
+TextBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.TextScaled = true
+
+-- Botão confirmar
+local Button = Instance.new("TextButton", Frame)
+Button.Size = UDim2.new(0.6, 0, 0, 30)
+Button.Position = UDim2.new(0.2, 0, 0.52, 0)
+Button.Text = "Confirmar"
+Button.BackgroundColor3 = Color3.fromRGB(0,170,0)
+Button.TextColor3 = Color3.fromRGB(255,255,255)
+Button.Font = Enum.Font.GothamBold
+Button.TextScaled = true
+Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
+
+-- Opções ESP
+local EspToggle = Instance.new("TextButton", Frame)
+EspToggle.Size = UDim2.new(0.9, 0, 0, 30)
+EspToggle.Position = UDim2.new(0.05, 0, 0.35, 0)
+EspToggle.Text = "ESP: OFF ❌"
+EspToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+EspToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspToggle.Visible = false
+EspToggle.Font = Enum.Font.GothamBold
+EspToggle.TextScaled = true
+Instance.new("UICorner", EspToggle).CornerRadius = UDim.new(0, 6)
+
+-- Opções Velocidade
+local SpeedToggle = Instance.new("TextButton", Frame)
+SpeedToggle.Size = UDim2.new(0.55, 0, 0, 30)
+SpeedToggle.Position = UDim2.new(0.05, 0, 0.55, 0)
+SpeedToggle.Text = "⚡ Velocidade: OFF ❌"
+SpeedToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+SpeedToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedToggle.Visible = false
+SpeedToggle.Font = Enum.Font.GothamBold
+SpeedToggle.TextScaled = true
+Instance.new("UICorner", SpeedToggle).CornerRadius = UDim.new(0, 6)
+
+local SpeedBox = Instance.new("TextBox", Frame)
+SpeedBox.Size = UDim2.new(0.3, 0, 0, 30)
+SpeedBox.Position = UDim2.new(0.65, 0, 0.55, 0)
+SpeedBox.Text = tostring(defaultSpeed)
+SpeedBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+SpeedBox.Visible = false
+SpeedBox.TextScaled = true
+
+-- Opções Pulo
+local JumpToggle = Instance.new("TextButton", Frame)
+JumpToggle.Size = UDim2.new(0.55, 0, 0, 30)
+JumpToggle.Position = UDim2.new(0.05, 0, 0.7, 0)
+JumpToggle.Text = "🦘 Pulo: OFF ❌"
+JumpToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+JumpToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+JumpToggle.Visible = false
+JumpToggle.Font = Enum.Font.GothamBold
+JumpToggle.TextScaled = true
+Instance.new("UICorner", JumpToggle).CornerRadius = UDim.new(0, 6)
+
+local JumpBox = Instance.new("TextBox", Frame)
+JumpBox.Size = UDim2.new(0.3, 0, 0, 30)
+JumpBox.Position = UDim2.new(0.65, 0, 0.7, 0)
+JumpBox.Text = tostring(defaultJump)
+JumpBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+JumpBox.Visible = false
+JumpBox.TextScaled = true
+
+-- Botão menu
+local MenuButton = Instance.new("TextButton", ScreenGui)
+MenuButton.Size = UDim2.new(0, 120, 0, 40)
+MenuButton.Position = UDim2.new(0, 20, 0, 200)
+MenuButton.Text = "📂 Menu"
+MenuButton.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MenuButton.TextColor3 = Color3.fromRGB(255,255,255)
+MenuButton.Font = Enum.Font.GothamBold
+MenuButton.TextScaled = true
+MenuButton.Active = true
+MenuButton.Draggable = true
+Instance.new("UICorner", MenuButton).CornerRadius = UDim.new(0, 10)
+
+-- Eventos senha
+Button.MouseButton1Click:Connect(function()
+    if TextBox.Text == senhaCorreta then
+        senhaJaConfirmada = true
+        Label.Text = "✅ Acesso Liberado"
+        Label.TextColor3 = Color3.fromRGB(0,255,0)
+        TextBox.Visible = false
+        Button.Visible = false
+        EspToggle.Visible = true
+        SpeedToggle.Visible = true
+        SpeedBox.Visible = true
+        JumpToggle.Visible = true
+        JumpBox.Visible = true
+    else
+        Label.Text = "Senha Incorreta!"
+        Label.TextColor3 = Color3.fromRGB(255,0,0)
+    end
+end)
+
+-- Eventos ESP
+EspToggle.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    EspToggle.Text = espEnabled and "ESP: ON ✅" or "ESP: OFF ❌"
+end)
+
+-- Eventos velocidade
+SpeedToggle.MouseButton1Click:Connect(function()
+    speedEnabled = not speedEnabled
+    SpeedToggle.Text = speedEnabled and "⚡ Velocidade: ON ✅" or "⚡ Velocidade: OFF ❌"
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = speedEnabled and (tonumber(SpeedBox.Text) or defaultSpeed) or defaultSpeed
+    end
+end)
+
+SpeedBox.FocusLost:Connect(function()
+    if speedEnabled then
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = tonumber(SpeedBox.Text) or defaultSpeed
+        end
+    end
+end)
+
+-- Função pulo
+local function setJump(value)
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        if humanoid.UseJumpPower then
+            humanoid.JumpPower = value
+        else
+            humanoid.JumpHeight = value/5
+        end
+    end
+end
+
+JumpToggle.MouseButton1Click:Connect(function()
+    jumpEnabled = not jumpEnabled
+    JumpToggle.Text = jumpEnabled and "🦘 Pulo: ON ✅" or "🦘 Pulo: OFF ❌"
+    if jumpEnabled then
+        setJump(tonumber(JumpBox.Text) or defaultJump)
+    else
+        setJump(defaultJump)
+    end
+end)
+
+JumpBox.FocusLost:Connect(function()
+    if jumpEnabled then
+        setJump(tonumber(JumpBox.Text) or defaultJump)
+    end
+end)
+
+-- Evento abrir/fechar menu
+MenuButton.MouseButton1Click:Connect(function()
+    Frame.Visible = not Frame.Visible
+end)
